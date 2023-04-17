@@ -10,12 +10,41 @@ espacio entre palabra y palabra.
 
 """
 import pandas as pd
+from warnings import filterwarnings
+filterwarnings("ignore")
 
 
 def ingest_data():
+    
+    df = pd.read_fwf('clusters_report.txt', widths=[7,16,16,80],
+                names =['Cluster', 'Cantidad de palabras clave', 'Porcentaje de palabras clave', 'Principales palabras clave'], 
+                skiprows = [0,1,2,3], skip_footer = True, keep_default_na = False, na_filter = True, verbose  = True,
+                warn_bad_lines  = False)
+    for i, elemento in enumerate (df['Cluster']):
+        if elemento == '':
+            df['Cluster'].iloc[i] = df['Cluster'].iloc[i-1]
+            df['Cantidad de palabras clave'].iloc[i] = df['Cantidad de palabras clave'].iloc[i-1] 
+            df['Porcentaje de palabras clave'].iloc[i] = df['Porcentaje de palabras clave'].iloc[i-1]
 
-    #
-    # Inserte su código aquí
-    #
+    df.columns = df.columns.str.replace(' ', '_') 
+
+    df.columns = df.columns.str.lower()
+
+    df['porcentaje_de_palabras_clave'].replace({"%": ''}, inplace=(True),  regex=True)
+    df['porcentaje_de_palabras_clave'].replace({",": '.'}, inplace=(True),  regex=True)
+
+    for i in df.columns:
+        
+        df[i] = df[i].apply(lambda value:" ".join(str(value).strip().split()))
+
+    df['cluster'] = df['cluster'].astype(int) 
+    df['cantidad_de_palabras_clave'] = df['cantidad_de_palabras_clave'].astype(int) 
+    df['porcentaje_de_palabras_clave'] = df['porcentaje_de_palabras_clave'].astype(float)
+
+    df = df.groupby(['cluster','cantidad_de_palabras_clave','porcentaje_de_palabras_clave'])['principales_palabras_clave'].apply(' '.join).reset_index()
+
+    for i, elemento in enumerate (df['principales_palabras_clave']):
+        if elemento[-1] == '.':
+            df['principales_palabras_clave'].iloc[i] = elemento[:-1]
 
     return df
